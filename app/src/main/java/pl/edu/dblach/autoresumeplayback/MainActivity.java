@@ -7,24 +7,26 @@ import android.widget.TextView;
 import android.widget.CheckBox;
 import android.net.Uri;
 import android.view.View;
-import android.media.audiofx.Visualizer;
+//import android.media.audiofx.Visualizer;
 import android.content.SharedPreferences;
 import android.content.Context;
 import android.widget.Toast;
 import android.text.TextWatcher;
 import android.text.Editable;
-import java.util.Date;
-import java.util.Calendar;
-import java.text.SimpleDateFormat;
-import java.text.ParseException;
+import android.app.ActivityManager;
+//import java.util.Date;
+//import java.util.Calendar;
+//import java.text.SimpleDateFormat;
+//import java.text.ParseException;
 import java.io.File;
 import java.io.BufferedReader;
 import java.io.FileReader;
 
-public class MainActivity extends AppCompatActivity implements Visualizer.OnDataCaptureListener{
+public class MainActivity extends AppCompatActivity{
+//public class MainActivity extends AppCompatActivity implements Visualizer.OnDataCaptureListener{
     public static final int PICKFILE_RESULT_CODE=1;
-    private Visualizer v;
-    private int c=0;
+    //private Visualizer v;
+    //private int c=0;
     private TextView label_monitoring;
     private TextView t_filename;
     private TextView t_url;
@@ -36,7 +38,7 @@ public class MainActivity extends AppCompatActivity implements Visualizer.OnData
     @Override protected void onCreate(Bundle savedInstanceState){
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        v=new Visualizer(0);
+        //v=new Visualizer(0);
         p=this.getSharedPreferences("pl.edu.dblach.AutoResumePlayback.PREFERENCE_FILE_KEY",Context.MODE_PRIVATE);
         label_monitoring=(TextView)findViewById(R.id.label_monitoring);
         t_filename=(TextView)findViewById(R.id.label_loadedfile);
@@ -44,7 +46,8 @@ public class MainActivity extends AppCompatActivity implements Visualizer.OnData
         cbTime=(CheckBox)findViewById(R.id.cbTime);
         tpStart=(TextView)findViewById(R.id.tpStart);
         tpStop=(TextView)findViewById(R.id.tpStop);
-        label_monitoring.setText(p.getString("monitoring","OFF"));
+        //label_monitoring.setText(p.getString("monitoring","OFF"));
+        label_monitoring.setText(isServiceRunning());
         t_filename.setText(p.getString("t_filename",""));
         t_url.setText(getStreamUrl(t_filename.getText().toString()));
         if(p.getString("timer_enabled","0").equals("1")) cbTime.setChecked(true);
@@ -67,25 +70,29 @@ public class MainActivity extends AppCompatActivity implements Visualizer.OnData
     }
 
     public void switchVisualizer(View a){
-        if(label_monitoring.getText().toString().equals("OFF")){
-            v.setDataCaptureListener(this,50,true,false);
+        if(isServiceRunning().equals("OFF")){
+        //if(label_monitoring.getText().toString().equals("OFF")){
+            //v.setDataCaptureListener(this,50,true,false);
             /*
             capture interval:
             50 = 21 s
             80 = 14 s
             */
-            v.setCaptureSize(2);
-            v.setEnabled(true);
-            label_monitoring.setText("ON");
-            saveSetting("monitoring","ON");
+            //v.setCaptureSize(2);
+            //v.setEnabled(true);
+            //label_monitoring.setText("ON");
+            //saveSetting("monitoring","ON");
+            startService(new Intent(this,PlaybackService.class));
         }
         else{
-            v.setEnabled(false);
-            v.setDataCaptureListener(null, 0, false, false);
+            //v.setEnabled(false);
+            //v.setDataCaptureListener(null, 0, false, false);
             //v.release();
-            label_monitoring.setText("OFF");
-            saveSetting("monitoring","OFF");
+            //label_monitoring.setText("OFF");
+            //saveSetting("monitoring","OFF");
+            stopService(new Intent(this,PlaybackService.class));
         }
+        label_monitoring.setText(isServiceRunning());
     }
 
     public void btnOpenClick(View v){
@@ -112,12 +119,8 @@ public class MainActivity extends AppCompatActivity implements Visualizer.OnData
     }
 
     public void cbTimeClick(View v){
-        if(cbTime.isChecked()){
-            saveSetting("timer_enabled","1");
-        }
-        else{
-            saveSetting("timer_enabled","0");
-        }
+        if(cbTime.isChecked()) saveSetting("timer_enabled","1");
+        else saveSetting("timer_enabled","0");
     }
 
     public void loadUrl(String url){
@@ -135,9 +138,10 @@ public class MainActivity extends AppCompatActivity implements Visualizer.OnData
             t_filename.setText(filePath);
             t_url.setText(getStreamUrl(filePath));
             saveSetting("t_filename",filePath);
+            saveSetting("t_url",t_url.getText().toString());
         }
     }
-
+/*
     @Override public void onWaveFormDataCapture(Visualizer thisVisualiser, byte[] waveform, int samplingRate) {
         String d=new String(waveform);
         if(detectSilence(d)){
@@ -162,7 +166,7 @@ public class MainActivity extends AppCompatActivity implements Visualizer.OnData
         for (int i=1;i<50;i+=2) if (s.charAt(i)!=s.charAt(1)) return false;
         return true;
     }
-
+*/
     private void saveSetting(String n,String v){
         SharedPreferences.Editor e=p.edit();
         e.putString(n,v);
@@ -182,7 +186,7 @@ public class MainActivity extends AppCompatActivity implements Visualizer.OnData
         catch(Exception e){}
         return "";
     }
-
+/*
     private Boolean playbackDisabledByTimer(){
         Boolean r=false;
         if(cbTime.isChecked()){
@@ -197,5 +201,11 @@ public class MainActivity extends AppCompatActivity implements Visualizer.OnData
             if(tNow.after(tStart) && tNow.before(tStop)) r=true;
         }
         return r;
+    }
+*/
+    private String isServiceRunning(){
+        ActivityManager m=(ActivityManager)getSystemService(Context.ACTIVITY_SERVICE);
+        for(ActivityManager.RunningServiceInfo service:m.getRunningServices(Integer.MAX_VALUE)) if(PlaybackService.class.getName().equals(service.service.getClassName())) return "ON";
+        return "OFF";
     }
 }
